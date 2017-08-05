@@ -770,59 +770,61 @@ Project.prototype.createGeneratorDOMEntry = function(id) {
     div_main.appendChild(div_extra);
 
     (function(project) {
-        $(div_icon).add($(div_icon_2)).click(function() {
+        function click_div_icon(cid) {
+            return function() {
+                var enumerationData = project.selectGeneratorUI(cid);
+                if (enumerationData == null) return;
+                var match_array = enumerationData.matches;
 
-            //var cid = $(this).attr("id").substring(3);
-            var cid = generator.id;
-
-            var enumerationData = project.selectGeneratorUI(cid);
-            if (enumerationData == null) return;
-            var match_array = enumerationData.matches;
-
-            // Display a list of all the attachment possibilities
-            project.clearThumbnails();
-            for (var i = 0; i < match_array.length; i++) {
-                var div_match = document.createElement('div');
-                $(div_match).addClass('preview-icon');
-                $(div_extra).append(div_match);
-                project.render(div_match, MainDisplay.visible_diagram, null, match_array[i]);
-                (function(match) {
-                    $(div_match).click(function() {
-                        var ncell = new NCell({
-                            id: enumerationData.diagram.cells[0].id,
-                            key: match.inclusion
+                // Display a list of all the attachment possibilities
+                project.clearThumbnails();
+                for (var i = 0; i < match_array.length; i++) {
+                    var div_match = document.createElement('div');
+                    $(div_match).addClass('preview-icon');
+                    $(div_extra).append(div_match);
+                    project.render(div_match, MainDisplay.visible_diagram, null, match_array[i]);
+                    (function(match) {
+                        $(div_match).click(function() {
+                            var ncell = new NCell({
+                                id: enumerationData.diagram.cells[0].id,
+                                key: match.inclusion
+                            });
+                            var boundary = {
+                                type: match.boundaryType,
+                                depth: match.realBoundaryDepth
+                            };
+                            // if (boundary.type == 's') ncell.id = ncell.id.toggle_inverse();
+                            project.diagram.attach(ncell, boundary);
+                            d = project.diagram;
+                            project.clearThumbnails();
+                            project.renderDiagram({
+                                drag: {
+                                    boundary: boundary
+                                }
+                            });
+                            project.saveState();
                         });
-                        var boundary = {
-                            type: match.boundaryType,
-                            depth: match.realBoundaryDepth
-                        };
-                        if (boundary.type == 's') ncell.id = ncell.id.toggle_inverse();
-                        project.diagram.attach(ncell, boundary);
-                        d = project.diagram;
-                        project.clearThumbnails();
-                        project.renderDiagram({
-                            drag: {
-                                boundary: boundary
+                    })(match_array[i]);
+
+                    (function(match) {
+                        $(div_match).hover(
+                            // Mouse over preview thumbnail
+                            function() {
+                                project.render('#diagram-canvas', MainDisplay.visible_diagram, null, match);
+                            },
+                            // Mouse out of preview thumbnail
+                            function() {
+                                project.renderDiagram();
                             }
-                        });
-                        project.saveState();
-                    });
-                })(match_array[i]);
-
-                (function(match) {
-                    $(div_match).hover(
-                        // Mouse over preview thumbnail
-                        function() {
-                            project.render('#diagram-canvas', MainDisplay.visible_diagram, null, match);
-                        },
-                        // Mouse out of preview thumbnail
-                        function() {
-                            project.renderDiagram();
-                        }
-                    )
-                })(match_array[i]);
+                        )
+                    })(match_array[i]);
+                }
             }
-        });
+        };
+        var cid = generator.id;
+        var cid_inverse = cid.toggle_inverse();
+        $(div_icon).click(click_div_icon(cid));
+        $(div_icon_2).click(click_div_icon(cid_inverse));
     })(this);
 
     return div_main;
